@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Codebase Navigator</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <style>
+    /* GitHub Dark Theme Inspired Styles */
+    :root {
+      --bg-primary: #0d1117;
+      --bg-secondary: #161b22;
+      --border-color: #30363d;
+      --text-primary: #c9d1d9;
+      --text-secondary: #8b949e;
+      --accent-color: #58a6ff;
+      --btn-primary-bg: #238636;
+      --btn-primary-hover: #2ea043;
+      --btn-danger-bg: #da3633;
+      --code-bg: #161b22;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      padding: 20px;
+      line-height: 1.5;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 40px;
+      animation: fadeInDown 0.6s ease-out;
+    }
+
+    .header h1 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+      color: var(--text-primary);
+    }
+
+    .header p {
+      font-size: 1.1rem;
+      color: var(--text-secondary);
+    }
+
+    .card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 24px;
+      margin-bottom: 25px;
+      transition: border-color 0.2s ease;
+      animation: fadeInUp 0.6s ease-out;
+    }
+
+    .card:hover {
+      border-color: var(--text-secondary);
+    }
+
+    .card h2 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 20px;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    input[type="text"],
+    input[type="file"] {
+      width: 100%;
+      padding: 8px 12px;
+      background-color: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      font-size: 1rem;
+      color: var(--text-primary);
+      font-family: inherit;
+      transition: all 0.2s ease;
+      margin-bottom: 15px;
+    }
+
+    input[type="text"]:focus {
+      outline: none;
+      border-color: var(--accent-color);
+      box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.3);
+    }
+
+    button {
+      width: 100%;
+      padding: 8px 16px;
+      background-color: var(--btn-primary-bg);
+      color: #ffffff;
+      border: 1px solid rgba(240, 246, 252, 0.1);
+      border-radius: 6px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+      font-family: inherit;
+    }
+
+    button:hover {
+      background-color: var(--btn-primary-hover);
+    }
+
+    button:disabled {
+      background-color: var(--bg-secondary);
+      color: var(--text-secondary);
+      cursor: not-allowed;
+      border-color: var(--border-color);
+    }
+
+    .reset-btn {
+      background-color: var(--bg-secondary);
+      color: var(--btn-danger-bg);
+      border: 1px solid var(--border-color);
+    }
+
+    .reset-btn:hover {
+      background-color: var(--btn-danger-bg);
+      color: white;
+    }
+
+    .status {
+      padding: 12px 20px;
+      background: rgba(56, 139, 253, 0.15);
+      border: 1px solid rgba(56, 139, 253, 0.4);
+      border-radius: 6px;
+      margin-top: 15px;
+      font-size: 0.95rem;
+      color: var(--accent-color);
+      font-weight: 500;
+      min-height: 45px;
+      display: flex;
+      align-items: center;
+    }
+
+    .chat-container {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 20px;
+      margin-bottom: 25px;
+      max-height: 500px;
+      overflow-y: auto;
+      animation: fadeInUp 0.6s ease-out;
+    }
+
+    .chat-container::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .chat-container::-webkit-scrollbar-track {
+      background: var(--bg-primary);
+    }
+
+    .chat-container::-webkit-scrollbar-thumb {
+      background: var(--border-color);
+      border-radius: 4px;
+    }
+
+    .message {
+      margin-bottom: 20px;
+      padding: 20px;
+      border-radius: 6px;
+      animation: slideIn 0.3s ease-out;
+      line-height: 1.6;
+      border: 1px solid var(--border-color);
+    }
+
+    .message.user {
+      background: rgba(31, 111, 235, 0.15);
+      border-color: rgba(31, 111, 235, 0.4);
+      color: var(--text-primary);
+      margin-left: 40px;
+    }
+
+    .message.ai {
+      background: transparent;
+      color: var(--text-primary);
+      margin-right: 40px;
+    }
+
+    .message-label {
+      font-weight: 600;
+      margin-bottom: 8px;
+      font-size: 0.85rem;
+      opacity: 0.8;
+      color: var(--text-secondary);
+    }
+
+    .message.user .message-label {
+      color: var(--accent-color);
+    }
+
+    /* Markdown Content Styles */
+    .message-content {
+      overflow-wrap: break-word;
+    }
+
+    .message-content p {
+      margin-bottom: 0.8em;
+    }
+
+    .message-content p:last-child {
+      margin-bottom: 0;
+    }
+
+    .message-content pre {
+      background: #0d1117;
+      color: var(--text-primary);
+      padding: 16px;
+      border-radius: 6px;
+      overflow-x: auto;
+      margin: 15px 0;
+      border: 1px solid var(--border-color);
+    }
+
+    .message-content code {
+      font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+      font-size: 0.9em;
+      background: rgba(110, 118, 129, 0.4);
+      padding: 0.2em 0.4em;
+      border-radius: 6px;
+    }
+
+    .message-content pre code {
+      background: transparent;
+      padding: 0;
+    }
+
+    .message-content a {
+      color: var(--accent-color);
+      text-decoration: none;
+    }
+
+    .message-content a:hover {
+      text-decoration: underline;
+    }
+
+    .locked {
+      opacity: 0.5;
+      pointer-events: none;
+      filter: grayscale(0.8);
+      position: relative;
+    }
+
+    .locked::after {
+      content: '🔒 Locked';
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: var(--text-secondary);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+      margin-bottom: 25px;
+    }
+
+    .input-group {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .input-group input {
+      flex: 1;
+      margin-bottom: 0;
+    }
+
+    .input-group button {
+      width: auto;
+    }
+
+    .empty-chat {
+      text-align: center;
+      color: var(--text-secondary);
+      padding: 40px 20px;
+      font-size: 1.1rem;
+    }
+
+    @keyframes fadeInDown {
+      from {
+        opacity: 0;
+        transform: translateY(-20px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateX(-10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🤖 AI Codebase Navigator</h1>
+      <p>Explore your repositories with intelligent Q&A</p>
+    </div>
+
+    <div class="grid">
+      <!-- Upload ZIP -->
+      <div class="card">
+        <h2>📦 Upload Repository</h2>
+        <input type="file" id="repoFile" />
+        <button type="button" onclick="uploadRepo(event)">Upload ZIP</button>
+      </div>
+
+      <!-- GitHub URL -->
+      <div class="card">
+        <h2>🔗 Load from GitHub</h2>
+        <input type="text" id="githubUrl" placeholder="https://github.com/user/repo" />
+        <button type="button" onclick="loadGithub()">Clone Repository</button>
+      </div>
+    </div>
+
+    <!-- Index -->
+    <div class="card" id="step-index">
+      <h2>⚡ Index Repository</h2>
+      <p style="margin-bottom: 15px; color: #8b949e;">Process your codebase to enable intelligent search</p>
+      <button type="button" onclick="indexRepo()">Index Now</button>
+      <div class="status" id="status">Ready to start</div>
+    </div>
+
+    <!-- Chat Section -->
+    <div class="card" id="step-chat">
+      <h2>💬 Ask Questions</h2>
+      <div class="chat-container" id="chat">
+        <div class="empty-chat">Your conversation will appear here...</div>
+      </div>
+      <div class="input-group">
+        <input type="text" id="question" placeholder="Ask about the codebase..." onkeypress="handleEnter(event)" />
+        <button type="button" onclick="ask()">Send</button>
+      </div>
+    </div>
+
+    <!-- Reset -->
+    <div class="card">
+      <h2>🔄 Reset Everything</h2>
+      <p style="margin-bottom: 15px; color: #8b949e;">Clear all data and start fresh</p>
+      <button type="button" class="reset-btn" onclick="resetAll()">Reset Repository & Index</button>
+    </div>
+  </div>
+
+  <script>
+    // State management
+    let appState = JSON.parse(localStorage.getItem('appState')) || {
+      repoLoaded: false,
+      indexed: false
+    };
+
+    function updateButtonStates() {
+      // Save state
+      localStorage.setItem('appState', JSON.stringify(appState));
+
+      // Lock/Unlock Index Step
+      const indexCard = document.getElementById('step-index');
+      if (appState.repoLoaded) {
+        indexCard.classList.remove('locked');
+        indexCard.querySelector('button').disabled = false;
+      } else {
+        indexCard.classList.add('locked');
+        indexCard.querySelector('button').disabled = true;
+      }
+
+      // Lock/Unlock Chat Step
+      const chatCard = document.getElementById('step-chat');
+      if (appState.indexed) {
+        chatCard.classList.remove('locked');
+        chatCard.querySelector('input').disabled = false;
+        chatCard.querySelector('button').disabled = false;
+      } else {
+        chatCard.classList.add('locked');
+        chatCard.querySelector('input').disabled = true;
+        chatCard.querySelector('button').disabled = true;
+      }
+    }
+
+    // Initialize button states on page load
+    window.addEventListener('DOMContentLoaded', () => {
+      updateButtonStates();
+
+      // Restore status if reloaded
+      if (appState.repoLoaded && !appState.indexed) {
+        setStatus("✅ Repository loaded (restored). Ready to index.");
+      } else if (appState.indexed) {
+        setStatus("✅ Indexing complete (restored). You can ask questions!");
+      }
+    });
+
+    function handleEnter(event) {
+      if (event.key === 'Enter' && appState.indexed) {
+        ask();
+      }
+    }
+
+    function addMessage(role, text) {
+      const chat = document.getElementById("chat");
+
+      // Remove empty message if exists
+      const empty = chat.querySelector('.empty-chat');
+      if (empty) {
+        empty.remove();
+      }
+
+      const div = document.createElement("div");
+      div.className = `message ${role}`;
+
+      // Parse markdown
+      const content = marked.parse(text);
+
+      div.innerHTML = `<div class="message-label">${role === "user" ? "You" : "AI Assistant"}</div><div class="message-content">${content}</div>`;
+      chat.appendChild(div);
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    function setStatus(msg) {
+      document.getElementById("status").innerText = msg;
+    }
+
+    function disableButtons(disabled) {
+      document.querySelectorAll("button").forEach(b => {
+        // Don't disable reset button unnecessarily
+        if (b.classList.contains('reset-btn')) return;
+        b.disabled = disabled;
+      });
+    }
+
+    const API = "http://127.0.0.1:8000";
+
+    async function uploadRepo(event) {
+      if (event) event.preventDefault();
+
+      const file = document.getElementById("repoFile").files[0];
+      if (!file) return alert("Select a ZIP file");
+
+      setStatus("Uploading repository...");
+      disableButtons(true);
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      await fetch(`${API}/upload-repo`, {
+        method: "POST",
+        body: formData
+      });
+
+      appState.repoLoaded = true;
+      appState.indexed = false; // Reset indexed state on new upload
+
+      setStatus("✅ Upload complete. Please click 'Index Now' to process the repository.");
+      disableButtons(false);
+      updateButtonStates();
+    }
+
+    async function loadGithub() {
+      const url = document.getElementById("githubUrl").value;
+      if (!url) return alert("Enter GitHub URL");
+
+      setStatus("Cloning GitHub repository...");
+      disableButtons(true);
+
+      try {
+        const res = await fetch(
+          `${API}/load-github?repo_url=${encodeURIComponent(url)}`,
+          { method: "POST" }
+        );
+
+        const data = await res.json();
+
+        if (data.error) {
+          setStatus("❌ GitHub clone failed");
+          alert(data.details || data.error);
+          appState.repoLoaded = false;
+          appState.indexed = false;
+        } else {
+          setStatus("✅ GitHub repository cloned. Please click 'Index Now' to process the repository.");
+          appState.repoLoaded = true;
+          appState.indexed = false; // Reset indexed state on new clone
+        }
+      } catch (e) {
+        setStatus("❌ Network error while cloning");
+        appState.repoLoaded = false;
+        appState.indexed = false;
+      }
+
+      disableButtons(false);
+      updateButtonStates();
+    }
+
+    async function indexRepo() {
+      if (!appState.repoLoaded) {
+        // Redundant check due to UI locking, but good for safety
+        alert("Please upload or load a repository first!");
+        return;
+      }
+
+      setStatus("Indexing repository (this may take a minute)...");
+      disableButtons(true);
+
+      const res = await fetch(`${API}/index-repo`, { method: "POST" });
+      const data = await res.json();
+
+      appState.indexed = true;
+      setStatus(`✅ Indexing complete: ${data.indexed_chunks} chunks processed. You can now ask questions!`);
+      disableButtons(false);
+      updateButtonStates();
+    }
+
+    async function ask() {
+      if (!appState.indexed) {
+        alert("Please index the repository first before asking questions!");
+        return;
+      }
+
+      const q = document.getElementById("question").value;
+      if (!q) return;
+
+      addMessage("user", q);
+      document.getElementById("question").value = "";
+
+      setStatus("🤔 Thinking...");
+      disableButtons(true);
+
+      try {
+        const res = await fetch(
+          `${API}/ask?query=${encodeURIComponent(q)}`,
+          { method: "POST" }
+        );
+        const data = await res.json();
+
+        if (data.answer) {
+          addMessage("ai", data.answer);
+          setStatus("✅ Answer ready");
+        } else {
+          addMessage("ai", "Error getting answer");
+          setStatus("❌ Error");
+        }
+      } catch {
+        addMessage("ai", "Backend not reachable");
+        setStatus("❌ Error");
+      }
+
+      disableButtons(false);
+      updateButtonStates();
+    }
+
+    async function resetAll() {
+      if (!confirm("Are you sure you want to reset everything?")) return;
+
+      setStatus("Resetting...");
+      await fetch(`${API}/reset`, { method: "POST" });
+      document.getElementById("chat").innerHTML = '<div class="empty-chat">Your conversation will appear here...</div>';
+
+      appState.repoLoaded = false;
+      appState.indexed = false;
+
+      // Update UI immediately (locking cards)
+      updateButtonStates();
+
+      setStatus("✅ Reset complete. Load a new repository to start.");
+    }
+  </script>
+</body>
+
+</html>
