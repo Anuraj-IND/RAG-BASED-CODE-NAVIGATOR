@@ -105,7 +105,9 @@ When running successfully, you should see:
     *   Middle section for Indexing (locked initially).
     *   Bottom Chat interface (locked until indexed).
 
-![alt text](image.png) ![![alt text](image-2.png)](image-1.png)
+![output](image.png)
+![output](image-2.png)
+![output](image-1.png)
 
 ## ⚠️ Common Issues
 
