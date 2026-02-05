@@ -18,7 +18,7 @@ def ask_question(index_path: str, query: str):
     context = scaledown_compress(raw_context, query)
 
     llm = OllamaLLM(
-        model="qwen2.5:3b-instruct",
+        model="qwen3:4b",
         num_ctx=4096,
         num_predict=2048
     )
