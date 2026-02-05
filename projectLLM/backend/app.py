@@ -2,8 +2,13 @@ from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 import os, shutil, zipfile
 from fastapi.responses import JSONResponse
-app = FastAPI()
+from uuid import uuid4
+from rag.query import get_response_from_rag
 
+
+app = FastAPI()
+# Initialize session store (key: session_id → list of messages)
+session_store = {}
 # Enable CORS for frontend
 app.add_middleware(
     CORSMiddleware,
@@ -110,15 +115,25 @@ def reset():
 
 
 @app.post("/ask")
-def ask_api(query: str):
-    try:
-        answer = ask_question(DATA_INDEX, query)
-        return JSONResponse(content={"answer": answer})
-    except Exception as e:
-        return JSONResponse(
-            content={"error": str(e)},
-            status_code=500
-        )
+def ask_question_api(query: str, session_id: str = None):
+    # Generate new session ID if not provided
+    if session_id is None:
+        session_id = str(uuid4())
+    
+    # Initialize session if empty
+    if session_id not in session_store:
+        session_store[session_id] = [{"query": query, "response": None}]
+    else:
+        session_store[session_id].append({"query": query, "response": None})
+    
+    # Get response using FULL conversation history
+    response = get_response_from_rag(session_store[session_id], DATA_INDEX)
+    
+    # Update session with response
+    session_store[session_id][-1]["response"] = response
+    
+    return {"answer": response, "session_id": session_id}
+
 
 DATA_INDEX = "data/index"
 os.makedirs(DATA_INDEX, exist_ok=True)

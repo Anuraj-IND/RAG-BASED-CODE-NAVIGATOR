@@ -396,7 +396,8 @@
     // State management
     let appState = JSON.parse(localStorage.getItem('appState')) || {
       repoLoaded: false,
-      indexed: false
+      indexed: false,
+      sessionId: null
     };
 
     function updateButtonStates() {
@@ -573,15 +574,23 @@
       disableButtons(true);
 
       try {
-        const res = await fetch(
-          `${API}/ask?query=${encodeURIComponent(q)}`,
-          { method: "POST" }
-        );
+        // Build URL with query and session_id if available
+        let url = `${API}/ask?query=${encodeURIComponent(q)}`;
+        if (appState.sessionId) {
+          url += `&session_id=${encodeURIComponent(appState.sessionId)}`;
+        }
+        
+        const res = await fetch(url, { method: "POST" });
         const data = await res.json();
 
         if (data.answer) {
           addMessage("ai", data.answer);
           setStatus("✅ Answer ready");
+          // Store session_id for future requests
+          if (data.session_id) {
+            appState.sessionId = data.session_id;
+            localStorage.setItem('appState', JSON.stringify(appState));
+          }
         } else {
           addMessage("ai", "Error getting answer");
           setStatus("❌ Error");
@@ -604,6 +613,7 @@
 
       appState.repoLoaded = false;
       appState.indexed = false;
+      appState.sessionId = null; // Reset session ID
 
       // Update UI immediately (locking cards)
       updateButtonStates();
