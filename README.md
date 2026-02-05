@@ -16,7 +16,9 @@ You need to pull the embedding and chat models in Ollama:
 
 ```bash
 ollama pull nomic-embed-text
-ollama pull qwen2.5:3b-instruct
+ollama pull qwen2.5:3b-instruct 
+or 
+ollama pull qwen3:4b
 ```
 
 ## 🚀 Installation & Setup
